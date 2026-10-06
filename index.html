@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3b5bdb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Online Test</title>
+<style>
+  :root{
+    --bg:#f5f6fa; --card:#fff; --ink:#1d2433; --muted:#6b7385; --line:#e3e6ee;
+    --brand:#3b5bdb; --brand-d:#2f49b0; --ok:#2f9e44; --warn:#e8590c; --bad:#c92a2a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+
+  /* ---------- anti-copy ---------- */
+  body.protect, body.protect *{
+    -webkit-user-select:none; -moz-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
+  }
+  body.protect input, body.protect textarea{ -webkit-user-select:text; user-select:text }
+  img{-webkit-user-drag:none}
+  @media print{ body{display:none !important} }
+
+  .wrap{max-width:900px;margin:0 auto;padding:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:0 1px 3px rgba(20,30,60,.05)}
+  h1{margin:0 0 4px;font-size:1.6rem} h2{margin:0 0 12px;font-size:1.2rem}
+  .muted{color:var(--muted);font-size:.92rem}
+  label{display:block;font-weight:600;margin:14px 0 6px;font-size:.92rem}
+  input[type=text],input[type=email]{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:1rem}
+  input:focus{outline:2px solid var(--brand);border-color:transparent}
+  button{font:inherit;cursor:pointer;border:0;border-radius:9px;padding:11px 20px;font-weight:600}
+  .primary{background:var(--brand);color:#fff} .primary:hover{background:var(--brand-d)}
+  .ghost{background:#fff;border:1px solid var(--line);color:var(--ink)} .ghost:hover{background:#f1f3f9}
+  .danger{background:var(--bad);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  ul.rules{padding-left:20px;margin:8px 0} ul.rules li{margin:4px 0}
+  .banner{background:#fff4e6;border:1px solid #ffd8a8;color:#a14a00;padding:10px 14px;border-radius:9px;margin-bottom:14px;font-size:.9rem}
+  .hidden{display:none !important}
+  .err{color:var(--bad);font-size:.9rem;margin-top:10px;min-height:1.2em}
+
+  /* ---------- test screen ---------- */
+  .topbar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
+  .topbar .in{max-width:1100px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .who{font-weight:600} .spacer{flex:1}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.15rem;padding:6px 12px;border-radius:8px;background:#edf2ff;color:var(--brand)}
+  .timer.low{background:#fff0f0;color:var(--bad)}
+  .viol{font-size:.85rem;color:var(--warn);font-weight:600}
+  .layout{max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 250px;gap:20px}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+  .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .tab{background:#fff;border:1px solid var(--line);color:var(--muted)}
+  .tab.active{background:var(--brand);border-color:var(--brand);color:#fff}
+  .qno{color:var(--muted);font-size:.88rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .qtext{font-size:1.18rem;font-weight:600;margin:6px 0 18px}
+  .opt{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;margin:9px 0;cursor:pointer;background:#fff}
+  .opt:hover{border-color:#b7c3f5}
+  .opt.sel{border-color:var(--brand);background:#edf2ff}
+  .opt .bullet{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:.8rem;font-weight:700;flex:none}
+  .opt.sel .bullet{background:var(--brand);border-color:var(--brand);color:#fff}
+  .nav{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+  .palette h3{margin:0 0 4px;font-size:.95rem}
+  .pgroup{margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .pbtn{padding:7px 0;border:1px solid var(--line);background:#fff;border-radius:7px;font-weight:600;font-size:.85rem}
+  .pbtn.done{background:var(--ok);border-color:var(--ok);color:#fff}
+  .pbtn.mark{background:#ffd43b;border-color:#ffd43b}
+  .pbtn.cur{outline:2px solid var(--brand)}
+  .legend{font-size:.78rem;color:var(--muted);margin-top:8px}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:fixed;inset:0;z-index:100;background:rgba(15,20,40,.92);display:grid;place-items:center;padding:20px}
+  .overlay .box{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:28px;text-align:center}
+  .overlay h2{color:var(--bad)}
+  #watermark{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.07}
+  .done-tick{width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;font-size:2rem;display:grid;place-items:center;margin:0 auto 12px}
+
+  /* ---------- mobile / touch ---------- */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  body{min-height:100vh;min-height:100dvh;overscroll-behavior-y:contain;-webkit-tap-highlight-color:transparent}
+  button,.opt,.pbtn,.tab{touch-action:manipulation}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{white-space:nowrap;flex:none}
+  .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .viol:empty{display:none}
+  .overlay .box{max-height:90vh;max-height:90dvh;overflow:auto}
+  #btnPalette,.sheet-head,#sheetBackdrop{display:none}
+
+  @media(max-width:820px){
+    .wrap{padding:12px}
+    .card{padding:16px;border-radius:12px}
+    h1{font-size:1.35rem}
+    input[type=text],input[type=email]{font-size:16px;padding:13px 12px}   /* 16px stops iOS zooming on focus */
+    input[type=checkbox]{width:22px;height:22px;flex:none}
+    #regForm button.primary{width:100%;padding:14px}
+
+    .topbar{padding-top:env(safe-area-inset-top)}
+    .topbar .in{padding:8px 12px;gap:8px}
+    .who{flex:1;font-size:.9rem}
+    .spacer{display:none}
+    .viol{order:3;flex-basis:100%;font-size:.8rem}
+    .timer{font-size:1rem;padding:5px 10px}
+    #btnSubmitTop{padding:9px 12px;font-size:.9rem}
+
+    .layout{display:block;padding:12px 12px 150px}
+    .tab{padding:11px 16px}
+    .qtext{font-size:1.08rem}
+    .opt{padding:14px;min-height:54px;font-size:1rem}
+    .opt .bullet{width:30px;height:30px}
+    .dsk{display:none}
+
+    /* bottom action bar */
+    .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;background:#fff;border-top:1px solid var(--line);
+         padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+    .nav button{padding:12px 6px;min-height:46px;font-size:.95rem}
+    #btnMark{order:1;grid-column:span 2}
+    #btnClear{order:2;grid-column:span 2}
+    #btnPalette{order:3;grid-column:span 2;display:block}
+    #btnPrev{order:4;grid-column:span 2}
+    #btnNext{order:5;grid-column:span 4}
+
+    /* question list becomes a slide-up sheet */
+    .palette{display:none}
+    .palette.open{display:block;position:fixed;left:0;right:0;bottom:0;z-index:70;max-height:75vh;max-height:75dvh;overflow:auto;
+                  border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.3)}
+    .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:1.05rem}
+    .sheet-head button{padding:8px 16px}
+    #sheetBackdrop.show{display:block;position:fixed;inset:0;z-index:65;background:rgba(15,20,40,.5)}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px}
+    .pbtn{padding:12px 0;font-size:1rem}
+
+    .overlay{padding:14px}
+    .overlay .box{padding:22px}
+    .overlay .box button{min-height:46px}
+    #btnReturn{width:100%}
+  }
+  @media(max-width:520px){ .tf{display:none} }
+  @media(max-width:380px){ .nav button{font-size:.85rem;padding:12px 4px} }
+</style>
+</head>
+<body class="protect">
+
+<!-- ================= REGISTER ================= -->
+<div id="screen-register" class="wrap">
+  <div class="card">
+    <h1>Gene Manipulation and Genomics Lab - Assessement - 1</h1>
+    <p class="muted" id="meta"></p>
+    <div id="cfgWarn" class="banner hidden">Demo mode: <code>APPS_SCRIPT_URL</code> isn't set in index.html, so results will not be saved or emailed.</div>
+
+    <h2 style="margin-top:18px">Instructions</h2>
+    <ul class="Instructions">
+      <li>The test has <b id="nSec"></b> sections of multiple-choice questions. Each question has one correct answer.</li>
+      <li>Stay on this page. Do not switch tabs or apps, minimise the browser, or leave full-screen (on devices that support it).</li>
+      <li>Every such attempt is recorded as a violation. After <b id="maxV"></b> violations the test is <b>submitted automatically</b>.</li>
+      <li>Copying, right-click, printing and developer shortcuts are disabled.</li>
+      <li>Your result will be emailed to you about <b id="delay"></b> hours after you submit.</li>
+      <li>Each email address can be used for <b>only one attempt</b>. Your email is locked to your attempt as soon as you press Start. If the page closes by accident, reopen it on the same device and browser to continue.</li>
+      <li><b>On a phone:</b> turn on Do Not Disturb so calls and notifications don't interrupt you, and open this page in Chrome or Safari (not inside WhatsApp, Instagram or other in-app browsers). Switching apps counts as a violation.</li>
+    </ul>
+
+    <form id="regForm" autocomplete="off">
+      <label for="name">Full name</label>
+      <input type="text" id="name" required maxlength="80">
+      <label for="email">Email address (results will be sent here)</label>
+      <input type="email" id="email" required maxlength="120" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false">
+      <label for="roll">Roll / Registration number</label>
+      <input type="text" id="roll" required maxlength="40">
+      <label style="display:flex;gap:10px;align-items:flex-start;font-weight:500">
+        <input type="checkbox" id="agree" required style="margin-top:4px">
+        <span>I have read the instructions and agree to take the test in full-screen without switching windows.</span>
+      </label>
+      <div class="err" id="regErr"></div>
+      <button class="primary" type="submit" style="margin-top:6px">Start Test</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= TEST ================= -->
+<div id="screen-test" class="hidden">
+  <div class="topbar"><div class="in">
+    <span class="who" id="who"></span>
+    <span class="viol" id="violLabel"></span>
+    <span class="spacer"></span>
+    <span class="timer" id="timer">--:--</span>
+    <button class="primary" id="btnSubmitTop">Submit Test</button>
+  </div></div>
+
+  <div class="layout">
+    <main class="card">
+      <div class="tabs" id="tabs"></div>
+      <div class="qno" id="qno"></div>
+      <div class="qtext" id="qtext"></div>
+      <div id="opts"></div>
+      <div class="nav">
+        <button class="ghost" id="btnPrev">&larr; Previous</button>
+        <button class="ghost" id="btnMark">Mark for review</button>
+        <button class="ghost" id="btnClear">Clear<span class="dsk"> answer</span></button>
+        <button class="ghost" id="btnPalette">&#9776; <span id="palCount"></span></button>
+        <button class="primary" id="btnNext">Save &amp; Next &rarr;</button>
+      </div>
+    </main>
+    <aside class="card palette" id="palette"></aside>
+  </div>
+</div>
+
+<!-- ================= DONE ================= -->
+<div id="screen-done" class="wrap hidden">
+  <div class="card" style="text-align:center">
+    <div class="done-tick">&#10003;</div>
+    <h1>Test submitted</h1>
+    <p id="doneMsg" class="muted"></p>
+    <p>Your result will be sent to <b id="doneEmail"></b> in about <b class="delayTxt"></b> hours.</p>
+    <p class="muted">You may now close this window.</p>
+  </div>
+</div>
+
+<!-- ================= OVERLAYS ================= -->
+<div id="ovViolation" class="overlay hidden">
+  <div class="box">
+    <h2>Warning</h2>
+    <p id="ovMsg"></p>
+    <button class="primary" id="btnReturn">Return to test (full-screen)</button>
+  </div>
+</div>
+<div id="ovConfirm" class="overlay hidden">
+  <div class="box">
+    <h2 style="color:var(--ink)">Submit test?</h2>
+    <p id="confirmMsg"></p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="ghost" id="btnCancelSubmit">Go back</button>
+      <button class="danger" id="btnConfirmSubmit">Yes, submit</button>
+    </div>
+  </div>
+</div>
+<div id="ovSubmitting" class="overlay hidden">
+  <div class="box"><h2 style="color:var(--ink)">Submitting&hellip;</h2><p class="muted">Please don't close this window.</p></div>
+</div>
+
+<div id="sheetBackdrop"></div>
+<div id="watermark" class="hidden"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURATION: edit this block
+   ===================================================================== */
+const CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyJuQXbp4U7MK5ZqySiV80mH9i2rnlv1XqB47lPH9f4KzbGCmqQ2wWxzky1sYTYOeD9/exec",          // paste your deployed Apps Script Web App URL here
+  TEST_TITLE: "Gene Manipulation and Genomics Lab - Assessement - 1",
+  DURATION_MIN: 15,             // test duration in minutes
+  MAX_VIOLATIONS: 3,            // auto-submit after this many violations
+  RESULT_DELAY_HOURS: 1         // shown to students; the actual delay is set in Code.gs
+};
+
+/* Questions: NO answer key here. Answers live in Code.gs so students can't read them.
+   Each question id (e.g. "A1") must match the key in Code.gs. */
+const SECTIONS = [
+  { id:"A", name:"Experiment 2 – Elution of DNA/RE digest from agarose gel", questions:[
+    { id:"A1", q:"What is the main purpose of DNA elution from an agarose gel?", o:["To amplify DNA","To extract and purify DNA fragments from the gel","To digest DNA with restriction enzymes","To synthesize RNA"] },
+    { id:"A2", q:"Which compound in the gel solubilization solution helps solubilize the agarose gel?", o:["Ethanol","Isopropanol","Guanidine thiocyanate","Sodium chloride"] },
+    { id:"A3", q:"In the silica-column method, DNA binds to silica in the presence of:", o:["Low salt concentration","High salt concentration","Pure water","Low temperature"] },
+    { id:"A4", q:"What is the purpose of washing the silica column with wash buffer?", o:["To digest DNA","To remove salts and impurities","To amplify DNA","To dissolve DNA"] },
+    { id:"A5", q:"Which alcohol is added at 100 µL per 100 mg of agarose gel slice according to the manual?", o:["Ethanol","Methanol","Isopropanol","Butanol"] }
+  ]},
+  { id:"B", name:"Experiment 4 – Ligation of plasmid vector with λ-DNA insert", questions:[
+    { id:"B1", q:"What is the main purpose of DNA ligation?", o:["To separate DNA fragments","To join DNA fragments together","To degrade DNA","To amplify RNA"] },
+    { id:"B2", q:"Which enzyme is used for ligating the pUC18 vector and λ-DNA insert?", o:["Taq DNA polymerase","EcoRI","T4 DNA ligase","Reverse transcriptase"] },
+    { id:"B3", q:"DNA ligase forms a phosphodiester bond between:", o:["Two nitrogenous bases","Adjacent 3′-OH and 5′-phosphate groups","Two 5′-phosphate groups","Two 3′-OH groups"] },
+    { id:"B4", q:"T4 DNA ligase can join:", o:["Only sticky ends","Only blunt ends","Both cohesive and blunt ends","Only RNA molecules"] },
+    { id:"B5", q:"What is the energy source required by T4 DNA ligase according to the manual?", o:["GTP","ATP","NADH","FAD"] }
+  ]},
+  { id:"C", name:"Experiment 5 – Transformation of competent DH5α cells", questions:[
+    { id:"C1", q:"What is bacterial transformation?", o:["Conversion of RNA into DNA","Direct uptake of DNA by a recipient bacterial cell","Replication of proteins","Digestion of plasmid DNA"] },
+    { id:"C2", q:"Which bacterial strain is used for transformation in Experiment 5?", o:["E. coli BL21","E. coli DH5α","Bacillus subtilis","E. coli K12"] },
+    { id:"C3", q:"Which reagent is used to prepare competent cells in the described method?", o:["EDTA","CaCl₂","Tris-HCl","SDS"] },
+    { id:"C4", q:"What is the purpose of CaCl₂ treatment during competent-cell preparation?", o:["To degrade plasmid DNA","To facilitate DNA uptake by bacterial cells","To inhibit bacterial growth","To digest proteins"] },
+    { id:"C5", q:"During transformation, competent cells are initially incubated with DNA on:", o:["Ice","Boiling water","37°C water bath","95°C heating block"] }
+  ]}
+];
+/* ===================================================================== */
+
+const $ = id => document.getElementById(id);
+const LS_KEY = "onlineTest.attempt.v1";
+const LS_PENDING = "onlineTest.pending.v1";
+const LABELS = "ABCD";
+
+let state = null;          // { student, startedAt, answers, marked, violations, sec, idx, submitted }
+let timerHandle = null;
+let lastViolationAt = 0;
+let submitting = false;
+
+/* ---------- helpers ---------- */
+const flat = () => SECTIONS.flatMap(s => s.questions);
+const save = () => { try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} };
+const load = () => { try{ return JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ return null; } };
+const show = id => { ["screen-register","screen-test","screen-done"].forEach(s => $(s).classList.toggle("hidden", s!==id)); };
+const fmt = s => { s=Math.max(0,s); const m=Math.floor(s/60), r=s%60; return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0"); };
+const inFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+function goFullscreen(){
+  const el = document.documentElement;
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  return fn ? Promise.resolve(fn.call(el)).catch(()=>{}) : Promise.resolve();
+}
+
+/* ---------- mobile helpers ---------- */
+// iPhone Safari has no page full-screen API; Android Chrome and iPad do.
+const fsSupported = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+const isCompact = () => window.matchMedia("(max-width:820px)").matches;
+let wakeLock = null;   // keeps the phone screen on so it doesn't sleep (sleeping would look like leaving the page)
+async function requestWake(){ try{ if("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); }catch(e){} }
+function releaseWake(){ try{ if(wakeLock) wakeLock.release(); }catch(e){} wakeLock = null; }
+document.addEventListener("visibilitychange", () => { if(!document.hidden && state && !state.submitted && !submitting) requestWake(); });
+function openSheet(){ $("palette").classList.add("open"); $("sheetBackdrop").classList.add("show"); }
+function closeSheet(){ $("palette").classList.remove("open"); $("sheetBackdrop").classList.remove("show"); }
+
+/* ---------- init ---------- */
+document.title = CONFIG.TEST_TITLE;
+$("btnReturn").textContent = fsSupported ? "Return to test (full-screen)" : "Return to test";
+$("btnPalette").onclick = openSheet;
+$("sheetBackdrop").onclick = closeSheet;
+$("meta").textContent = `${CONFIG.TEST_TITLE} · ${CONFIG.DURATION_MIN} minutes · ${flat().length} questions`;
+$("nSec").textContent = SECTIONS.length;
+$("maxV").textContent = CONFIG.MAX_VIOLATIONS;
+$("delay").textContent = CONFIG.RESULT_DELAY_HOURS;
+document.querySelectorAll(".delayTxt").forEach(e => e.textContent = CONFIG.RESULT_DELAY_HOURS);
+if(!CONFIG.APPS_SCRIPT_URL) $("cfgWarn").classList.remove("hidden");
+
+retryPending();
+setInterval(retryPending, 30000);
+
+const prev = load();
+if(prev && prev.submitted){
+  // Already submitted on this device. Don't lock the device: another student may use it.
+  // One attempt per email is enforced by the server when the next student presses Start.
+}else if(prev && !prev.submitted){
+  // page was reloaded / reopened mid-test: count as violation and resume
+  state = prev;
+  state.violations++;
+  save();
+  beginTestUI(true);
+  // phones often kill background tabs, so a reload may push the count over the limit
+  if(state.violations >= CONFIG.MAX_VIOLATIONS) finalSubmit("Auto-submitted: too many violations");
+}
+
+/* ---------- one attempt per email ---------- */
+const EMAIL_RE = /^[A-Za-z0-9_][^@\s]*@[^@\s]+\.[^@\s]+$/;
+const ALREADY_MSG = "This email address has already been used for this test. Each email can attempt the test only once.";
+
+// Asks the server to claim this email. The server refuses if the email (or a Gmail dot/+tag variant of it) was used before.
+async function claimAttempt(student){
+  if(!CONFIG.APPS_SCRIPT_URL) return { ok:true, token:"demo" };   // demo mode: nothing is checked or saved
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 30000);
+  try{
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method:"POST", signal: ctl.signal,
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },     // avoids a CORS preflight, which Apps Script can't answer
+      body: JSON.stringify({ action:"start", ...student })
+    });
+    const j = await res.json();
+    if(j.ok) return { ok:true, token:j.token };
+    if(j.error === "already")   return { ok:false, message: ALREADY_MSG };
+    if(j.error === "bad_email") return { ok:false, message:"Please enter a valid email address." };
+    return { ok:false, message:"Could not start the test. Please try again, or contact your invigilator." };
+  }catch(e){
+    return { ok:false, message:"Could not verify your email. Check your internet connection and try again." };
+  }finally{ clearTimeout(timer); }
+}
+
+/* ---------- registration ---------- */
+$("regForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("regErr").textContent = "";
+  const student = {
+    name: $("name").value.trim(),
+    email: $("email").value.trim().toLowerCase(),
+    roll: $("roll").value.trim()
+  };
+  if(!EMAIL_RE.test(student.email)){ $("regErr").textContent = "Please enter a valid email address."; return; }
+  const local = load();
+  if(!CONFIG.APPS_SCRIPT_URL && local?.submitted && local.student?.email === student.email){
+    $("regErr").textContent = ALREADY_MSG; return;      // demo mode only; with a backend the server decides
+  }
+
+  const btn = $("regForm").querySelector("button[type=submit]");
+  btn.disabled = true; btn.textContent = "Checking your email…";
+  const claim = await claimAttempt(student);
+  btn.disabled = false; btn.textContent = "Start Test";
+  if(!claim.ok){ $("regErr").textContent = claim.message; return; }
+
+  await goFullscreen();
+  state = { student, token: claim.token, startedAt: Date.now(), answers:{}, marked:{}, violations:0, sec:0, idx:0, submitted:false };
+  save();
+  beginTestUI(false);
+});
+
+/* ---------- test UI ---------- */
+function beginTestUI(resumed){
+  show("screen-test");
+  $("who").textContent = `${state.student.name} (${state.student.roll})`;
+  buildWatermark();
+  buildTabs();
+  render();
+  startTimer();
+  armProtection();
+  if(resumed){
+    showViolation("The test page was reloaded or reopened. This has been recorded.");
+  }else if(fsSupported && !inFullscreen()){
+    showViolation("Please enter full-screen mode to begin.", false);
+  }
+  updateViolLabel();
+}
+
+function buildWatermark(){
+  const w = $("watermark");
+  const txt = `${state.student.name} · ${state.student.email}`.replace(/[<>&"]/g,"");
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='200'><text x='20' y='110' transform='rotate(-25 180 100)' font-family='sans-serif' font-size='16' fill='black'>${txt}</text></svg>`;
+  w.style.backgroundImage = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  w.classList.remove("hidden");
+}
+
+function buildTabs(){
+  const t = $("tabs"); t.innerHTML = "";
+  SECTIONS.forEach((s,i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.append(`Section ${s.id}`);
+    const sp = document.createElement("span"); sp.className = "tf"; sp.textContent = `: ${s.name}`; b.append(sp);
+    b.onclick = () => { state.sec=i; state.idx=0; save(); render(); };
+    t.appendChild(b);
+  });
+}
+
+function render(){
+  const s = SECTIONS[state.sec], q = s.questions[state.idx];
+  [...$("tabs").children].forEach((b,i)=>b.classList.toggle("active", i===state.sec));
+  $("qno").textContent = `Section ${s.id} · ${s.name} · Q${state.idx+1} of ${s.questions.length}`;
+  $("qtext").textContent = q.q;
+  const box = $("opts"); box.innerHTML = "";
+  q.o.forEach((txt,i) => {
+    const d = document.createElement("div");
+    d.className = "opt" + (state.answers[q.id]===i ? " sel":"");
+    d.innerHTML = `<span class="bullet">${LABELS[i]}</span><span></span>`;
+    d.lastChild.textContent = txt;
+    d.onclick = () => { state.answers[q.id]=i; save(); render(); };
+    box.appendChild(d);
+  });
+  const cp = isCompact();
+  $("btnMark").textContent = state.marked[q.id] ? (cp ? "Unmark" : "Unmark review") : (cp ? "Mark" : "Mark for review");
+  $("btnPrev").disabled = (state.sec===0 && state.idx===0);
+  const last = state.sec===SECTIONS.length-1 && state.idx===s.questions.length-1;
+  $("btnNext").textContent = last ? "Save" : "Save & Next →";
+  renderPalette();
+}
+
+function renderPalette(){
+  const p = $("palette");
+  p.innerHTML = '<div class="sheet-head"><b>Questions</b><button class="ghost" id="btnClosePalette">Close</button></div>';
+  $("btnClosePalette").onclick = closeSheet;
+  const allQ = flat();
+  $("palCount").textContent = `${allQ.filter(q => state.answers[q.id]!==undefined).length}/${allQ.length}`;
+  SECTIONS.forEach((s,si) => {
+    const g = document.createElement("div"); g.className = "pgroup";
+    g.innerHTML = `<h3>Section ${s.id}</h3><div class="muted" style="margin-bottom:6px;font-size:.8rem">${s.name}</div>`;
+    const grid = document.createElement("div"); grid.className = "grid";
+    s.questions.forEach((q,qi) => {
+      const b = document.createElement("button");
+      b.className = "pbtn" + (state.marked[q.id]?" mark": state.answers[q.id]!==undefined?" done":"") + (si===state.sec&&qi===state.idx?" cur":"");
+      b.textContent = qi+1;
+      b.onclick = () => { state.sec=si; state.idx=qi; save(); closeSheet(); render(); };
+      grid.appendChild(b);
+    });
+    g.appendChild(grid); p.appendChild(g);
+  });
+  const l = document.createElement("div"); l.className="legend";
+  l.innerHTML = "Green: answered · Yellow: marked · White: not answered";
+  p.appendChild(l);
+}
+
+$("btnPrev").onclick = () => {
+  if(state.idx>0) state.idx--; else if(state.sec>0){ state.sec--; state.idx=SECTIONS[state.sec].questions.length-1; }
+  save(); render();
+};
+$("btnNext").onclick = () => {
+  const s = SECTIONS[state.sec];
+  if(state.idx < s.questions.length-1) state.idx++;
+  else if(state.sec < SECTIONS.length-1){ state.sec++; state.idx=0; }
+  save(); render();
+};
+$("btnMark").onclick = () => { const q=SECTIONS[state.sec].questions[state.idx]; state.marked[q.id]=!state.marked[q.id]; save(); render(); };
+$("btnClear").onclick = () => { const q=SECTIONS[state.sec].questions[state.idx]; delete state.answers[q.id]; save(); render(); };
+
+/* ---------- timer ---------- */
+function startTimer(){
+  clearInterval(timerHandle);
+  const tick = () => {
+    const left = Math.round((state.startedAt + CONFIG.DURATION_MIN*60000 - Date.now())/1000);
+    $("timer").textContent = fmt(left);
+    $("timer").classList.toggle("low", left <= 300);
+    if(left <= 0){ clearInterval(timerHandle); finalSubmit("Time up"); }
+  };
+  tick(); timerHandle = setInterval(tick, 1000);
+}
+
+/* ---------- submit ---------- */
+function openConfirm(){
+  const all = flat(), answered = all.filter(q => state.answers[q.id]!==undefined).length;
+  $("confirmMsg").textContent = `You have answered ${answered} of ${all.length} questions. You cannot change answers after submitting.`;
+  $("ovConfirm").classList.remove("hidden");
+}
+$("btnSubmitTop").onclick = openConfirm;
+$("btnCancelSubmit").onclick = () => $("ovConfirm").classList.add("hidden");
+$("btnConfirmSubmit").onclick = () => { $("ovConfirm").classList.add("hidden"); finalSubmit("Manual"); };
+
+async function finalSubmit(reason){
+  if(submitting || state.submitted) return;
+  submitting = true;
+  disarmProtection();
+  clearInterval(timerHandle);
+  $("ovViolation").classList.add("hidden");
+  $("ovSubmitting").classList.remove("hidden");
+
+  const payload = {
+    name: state.student.name, email: state.student.email, roll: state.student.roll,
+    token: state.token,
+    answers: state.answers,
+    violations: state.violations,
+    reason,
+    startedAt: state.startedAt,
+    submittedAt: Date.now()
+  };
+  state.submitted = true; state.reason = reason; state.submittedAt = payload.submittedAt;
+  save();
+  const ok = await send(payload);
+  if(!ok) queuePending(payload);
+
+  if(document.exitFullscreen && inFullscreen()) try{ await document.exitFullscreen(); }catch(e){}
+  $("ovSubmitting").classList.add("hidden");
+  showDone(state);
+}
+
+async function send(payload){
+  if(!CONFIG.APPS_SCRIPT_URL) { console.warn("APPS_SCRIPT_URL not set; result not sent."); return true; }
+  try{
+    // text/plain avoids a CORS preflight, which Apps Script can't answer.
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    const j = await res.json();
+    if(j.ok) return true;
+    // errors that retrying can never fix: stop re-sending
+    if(["bad_token","not_started","bad_email"].includes(j.error)){ console.error("Submission rejected:", j.error); return true; }
+    return false;   // e.g. server busy: keep it queued and retry
+  }catch(e){ return false; }
+}
+function queuePending(p){ try{ const a=JSON.parse(localStorage.getItem(LS_PENDING)||"[]"); a.push(p); localStorage.setItem(LS_PENDING, JSON.stringify(a)); }catch(e){} }
+async function retryPending(){
+  try{
+    const a = JSON.parse(localStorage.getItem(LS_PENDING)||"[]");
+    if(!a.length) return;
+    const left = [];
+    for(const p of a){ if(!(await send(p))) left.push(p); }
+    localStorage.setItem(LS_PENDING, JSON.stringify(left));
+  }catch(e){}
+}
+
+function showDone(st){
+  show("screen-done");
+  $("watermark").classList.add("hidden");
+  $("doneEmail").textContent = st.student.email;
+  $("doneMsg").textContent = st.reason && st.reason!=="Manual"
+    ? `Your test was submitted automatically (${st.reason}).`
+    : "Your answers have been recorded.";
+}
+
+/* ---------- anti-copy & anti-minimise ---------- */
+function violation(msg){
+  if(!state || state.submitted || submitting) return;
+  const now = Date.now();
+  if(now - lastViolationAt < 1500) return;    // one event can fire visibility + blur + fullscreen together
+  lastViolationAt = now;
+  state.violations++; save(); updateViolLabel();
+  if(state.violations >= CONFIG.MAX_VIOLATIONS){ finalSubmit("Auto-submitted: too many violations"); return; }
+  showViolation(msg);
+}
+function showViolation(msg, counted = true){
+  const left = CONFIG.MAX_VIOLATIONS - state.violations;
+  $("ovMsg").textContent = counted
+    ? `${msg} Violation ${state.violations} of ${CONFIG.MAX_VIOLATIONS}. ` +
+      (left>0 ? `${left} more and your test will be submitted automatically.` : "")
+    : msg;
+  closeSheet();
+  $("ovViolation").classList.remove("hidden");
+}
+function updateViolLabel(){
+  $("violLabel").textContent = state.violations ? `Violations: ${state.violations}/${CONFIG.MAX_VIOLATIONS}` : "";
+}
+$("btnReturn").onclick = async () => { await goFullscreen(); $("ovViolation").classList.add("hidden"); };
+
+const block = e => { e.preventDefault(); e.stopPropagation(); return false; };
+const onVisibility = () => { if(document.hidden) violation("You switched tabs or minimised the window."); };
+const onBlur = () => violation("The test window lost focus.");
+const onFs = () => { if(!inFullscreen()) violation("You exited full-screen mode."); };
+const onKey = e => {
+  const k = (e.key||"").toLowerCase(), c = e.ctrlKey || e.metaKey;
+  const bad =
+    e.key === "F12" || e.key === "PrintScreen" || e.key === "F11" ||
+    (c && ["c","x","v","a","u","s","p","f","g"].includes(k)) ||
+    (c && e.shiftKey && ["i","j","c","k","s"].includes(k));
+  if(e.key === "PrintScreen"){ try{ navigator.clipboard.writeText(""); }catch(_){} violation("Screenshot key detected."); }
+  if(bad) block(e);
+};
+function armProtection(){
+  ["copy","cut","paste","contextmenu","selectstart","dragstart"].forEach(t => document.addEventListener(t, block, true));
+  document.addEventListener("keydown", onKey, true);
+  document.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("blur", onBlur);
+  document.addEventListener("fullscreenchange", onFs);
+  document.addEventListener("webkitfullscreenchange", onFs);
+  window.addEventListener("beforeunload", beforeUnload);
+  document.body.classList.add("protect");
+  requestWake();
+}
+function disarmProtection(){
+  releaseWake();
+  document.removeEventListener("visibilitychange", onVisibility);
+  window.removeEventListener("blur", onBlur);
+  document.removeEventListener("fullscreenchange", onFs);
+  document.removeEventListener("webkitfullscreenchange", onFs);
+  window.removeEventListener("beforeunload", beforeUnload);
+}
+function beforeUnload(e){ if(state && !state.submitted){ e.preventDefault(); e.returnValue = ""; } }
+</script>
+</body>
+</html>
